@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>7000單字複習 App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <h1 class="app-title">7000單字複習</h1>
+    <p class="app-sub">大考中心高中英文參考詞彙表</p>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('flashcard',this)">單字卡</button>
+      <button class="tab" onclick="switchTab('quiz',this)">選擇題</button>
+      <button class="tab" onclick="switchTab('fill',this)">拼字</button>
+      <button class="tab" onclick="switchTab('progress',this)">進度</button>
+    </div>
+
+    <!-- 單字卡 -->
+    <div class="screen active" id="screen-flashcard">
+      <div class="filter-bar">
+        <label>等級</label>
+        <select id="fc-level" onchange="initFC()">
+          <option value="0">全部</option>
+          <option value="1">1級</option><option value="2">2級</option><option value="3">3級</option>
+          <option value="4">4級</option><option value="5">5級</option><option value="6">6級</option>
+        </select>
+        <label>方向</label>
+        <select id="fc-dir"><option value="en">英→中</option><option value="zh">中→英</option></select>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" id="fc-bar"></div></div>
+      <div class="prog-text" id="fc-prog">0 / 0</div>
+      <div class="card" id="fc-card" onclick="flipCard()">
+        <div class="lv-badge" id="fc-lv"></div>
+        <button class="mw-btn" id="fc-mw-btn" onclick="event.stopPropagation();openMW()">MW 字典</button>
+        <div id="fc-front">
+          <div class="card-word" id="fc-word"></div>
+          <div class="card-pos" id="fc-pos"></div>
+          <div class="word-speak-row">
+            <button class="speak-btn" id="fc-speak-word" onclick="event.stopPropagation();speakText(currentWord?currentWord[0]:'','fc-speak-word')" style="display:none">
+              <span class="spk-icon">🔊</span> 單字發音
+            </button>
+          </div>
+          <div class="card-hint-txt">點擊卡片翻轉</div>
+        </div>
+        <div id="fc-back" class="card-back-content">
+          <div class="card-meaning" id="fc-meaning"></div>
+          <div class="example-box">
+            <div class="ex-speak-row">
+              <div class="example-label">例句</div>
+              <button class="speak-btn" id="fc-speak-sentence" onclick="event.stopPropagation();speakText(currentWord?currentWord[4]:'','fc-speak-sentence')">
+                <span class="spk-icon">🔊</span> 例句發音
+              </button>
+            </div>
+            <div class="example-en" id="fc-ex-en"></div>
+            <div class="example-zh" id="fc-ex-zh"></div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-danger" onclick="markCard(false)">✕ 不熟</button>
+        <button class="btn-default" onclick="nextFC()">→ 跳過</button>
+        <button class="btn-success" onclick="markCard(true)">✓ 已會</button>
+      </div>
+    </div>
+
+    <!-- 選擇題 -->
+    <div class="screen" id="screen-quiz">
+      <div class="filter-bar">
+        <label>等級</label>
+        <select id="q-level" onchange="startQuiz()">
+          <option value="0">全部</option>
+          <option value="1">1級</option><option value="2">2級</option><option value="3">3級</option>
+          <option value="4">4級</option><option value="5">5級</option><option value="6">6級</option>
+        </select>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" id="q-bar"></div></div>
+      <div class="prog-text" id="q-prog">0 / 0</div>
+      <div class="score-badge" id="q-score"></div>
+      <div style="text-align:center;margin-bottom:.5rem">
+        <button class="speak-btn" id="q-speak-word" onclick="speakText(qPool[qIdx]?qPool[qIdx][0]:'','q-speak-word')">
+          <span class="spk-icon">🔊</span> 發音
+        </button>
+      </div>
+      <div class="quiz-word" id="q-word"></div>
+      <div class="quiz-opts" id="q-opts"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <div class="btn-row"><button class="btn-default" onclick="startQuiz()">重新開始</button></div>
+    </div>
+
+    <!-- 拼字 -->
+    <div class="screen" id="screen-fill">
+      <div class="filter-bar">
+        <label>等級</label>
+        <select id="f-level" onchange="startFill()">
+          <option value="0">全部</option>
+          <option value="1">1級</option><option value="2">2級</option><option value="3">3級</option>
+          <option value="4">4級</option><option value="5">5級</option><option value="6">6級</option>
+        </select>
+      </div>
+      <div class="pbar-wrap"><div class="pbar" id="f-bar"></div></div>
+      <div class="prog-text" id="f-prog">0 / 0</div>
+      <div class="score-badge" id="f-score"></div>
+      <div class="fill-question">
+        <div class="fill-label">請拼出對應的英文單字：</div>
+        <div class="fill-meaning" id="f-meaning"></div>
+        <div class="fill-pos" id="f-pos"></div>
+      </div>
+      <div class="fill-hint" id="f-hint"></div>
+      <input class="fill-input" id="f-input" type="text" placeholder="輸入英文單字..."
+        onkeydown="if(event.key==='Enter')checkFill()"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <div class="fill-result-row">
+        <div class="feedback" id="f-feedback"></div>
+        <button class="speak-btn" id="f-speak-btn" style="display:none" onclick="speakText(fLastWord?fLastWord[0]:'','f-speak-btn')">
+          <span class="spk-icon">🔊</span> 發音
+        </button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-default" onclick="revealFill()">提示</button>
+        <button class="btn-default" onclick="checkFill()">確認</button>
+        <button class="btn-default" onclick="startFill()">重新開始</button>
+      </div>
+    </div>
+
+    <!-- 進度 -->
+    <div class="screen" id="screen-progress">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num" id="s-learned">0</div><div class="stat-lbl">已學會</div></div>
+        <div class="stat-card"><div class="stat-num" id="s-review">0</div><div class="stat-lbl">待複習</div></div>
+        <div class="stat-card"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">總單字</div></div>
+      </div>
+      <div class="sec-title">各等級進度</div>
+      <div id="lvl-progress"></div>
+      <div class="btn-row" style="margin-top:1.5rem">
+        <button class="btn-danger" onclick="if(confirm('確定重置所有進度？')){resetProgress()}">重置進度</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="vocab.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
